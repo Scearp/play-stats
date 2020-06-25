@@ -6,16 +6,6 @@ import matplotlib.dates as pdt
 
 plt.style.use('fivethirtyeight')
 
-def load_albums():
-    albums = []
-
-    with open("./resources/album.csv", "r") as csvfile:
-        reader = csv.reader(csvfile, delimiter=',',quotechar='|')
-        for r in reader:
-            albums.append([r[0], r[1], r[2]])
-            
-    return albums
-
 def parse_csv(play):
     date = pdt.date2num(datetime.strptime(play[3], "%d %b %Y %H:%M").date())
     artist = play[0]
@@ -33,8 +23,7 @@ def parse_json(play):
     return [play_time, date, track, album, artist]
 
 def load_plays(filename, mn = 30000):
-    filename_split = filename.split('.')
-    file_type = filename_split[len(filename_split) - 1]
+    file_type = filename.split('.')[-1]
     if file_type == 'json':
         with open(filename, encoding="utf-8") as jf:
             data = json.load(jf)
@@ -48,7 +37,6 @@ def load_plays(filename, mn = 30000):
     else:
         raise ValueError("Unsupported filetype: %s" % file_type)
     return(plays)
-
 
 def track_plays(plays):
     tracks = list(map(lambda p: "%s - %s" % (p[1], p[3], plays)))
@@ -65,7 +53,6 @@ def artist_plays(plays):
     artists = map(lambda p: p[3], plays)
     dates = map(lambda p: p[0], plays)
     return list(zip(dates, artists))
-    
 
 def trailing_sum(y, trail):
     if trail > 1:
@@ -132,24 +119,16 @@ def weekly_plays(daily_plays, period = 7, weekday = 3):
 
     return weekly_dictionary
 
-def fill(daily_dict):
-    start = min(daily_dict)
-    end = max(daily_dict)
-
-    for i in range(int(end - start)):
-        if (start + i) not in daily_dict:
-            daily_dict[start + i] = 0  
-
-    return daily_dict
+def fill_dict(days):
+    start = min(days)
+    end = int(max(days))
+    filled_days = [start + i for i in range(end - int(start) + 1)]
+    return dict(zip(filled_days, [0] * len(filled_days)))
 
 def daily(name, play_list):
-    plays = filter(lambda p: name in p, play_list)
-    daily_plays = {}
-
+    plays = list(filter(lambda p: name in p, play_list))
+    days = set(map(lambda p: p[0], plays))
+    daily_plays = fill_dict(days)
     for p in plays:
-        try:
-            daily_plays[p[0]] += 1
-        except:
-            daily_plays[p[0]] = 1
-
-    return fill(daily_plays)
+        daily_plays[p[0]] += 1
+    return daily_plays
