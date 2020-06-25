@@ -16,37 +16,56 @@ def load_albums():
             
     return albums
 
-def load_plays(filename, mn = 30000):
-    track_plays = []
-    artist_plays = []
-    album_plays = []
+def parse_csv(play):
+    date = pdt.date2num(datetime.strptime(play[3], "%d %b %Y %H:%M").date())
+    artist = play[0]
+    album = play[1]
+    track = play[2]
+    return [date, track, album, artist]
 
-    if "json" in filename:
+def parse_json(play):
+    date = pdt.date2num(datetime.strptime(play['endTime'],
+                                          '%Y-%m-%d %H:%M').date())
+    artist = play['artistName']
+    album = None
+    track = play['trackName']
+    play_time = play['msPlayed']
+    return [play_time, date, track, album, artist]
+
+def load_plays(filename, mn = 30000):
+    filename_split = filename.split('.')
+    file_type = filename_split[len(filename_split) - 1]
+    if file_type == 'json':
         with open(filename, encoding="utf-8") as jf:
             data = json.load(jf)
-            for track in data:
-                if track["msPlayed"] > mn:
-                    date = pdt.date2num(datetime.strptime(track["endTime"],
-                                                          "%Y-%m-%d %H:%M").date())
-                    track_plays.append([date,
-                                        track["trackName"] + " - "
-                                        + track["artistName"]])
-                    artist_plays.append([date, track["artistName"]])
-                    for a in albums:
-                        if track["trackName"] in a:
-                            if track["artistName"] == a[2]:
-                                album_plays.append([date, a[1] + " - "
-                                                    +  track["artistName"]])
-    if "csv" in filename:
+            all_plays = map(parse_json, data)
+            valid_plays = filter(lambda p: p[0] >= mn, all_plays)
+            plays = list(map(lambda p: p[1:], valid_plays))
+    elif file_type == 'csv':
         with open(filename, "r") as csvfile:
             reader = csv.reader(csvfile, delimiter=',',quotechar='|')
-            for r in reader:
-                date = pdt.date2num(datetime.strptime(r[3], "%d %b %Y %H:%M").date())
-                track_plays.append([date, r[2] + " - " + r[0]])
-                album_plays.append([date, r[1] + " - " + r[0]])
-                artist_plays.append([date, r[0]])
+            plays = list(map(parse_csv, reader))
+    else:
+        raise ValueError("Unsupported filetype: %s" % file_type)
+    return(plays)
 
-    return([track_plays, album_plays, artist_plays])
+
+def track_plays(plays):
+    tracks = list(map(lambda p: "%s - %s" % (p[1], p[3], plays)))
+    dates = list(map(lambda p: p[0], plays))
+    return list(zip(dates, tracks))
+
+def album_plays(plays):
+    valid_plays = filter(lambda p: p[2] != None, plays)
+    albums = map(lambda p: "%s - %s" % (p[2], p[3]), valid_plays)
+    dates = map(lambda p: p[0], valid_plays)
+    return list(zip(dates, albums))
+
+def artist_plays(plays):
+    artists = map(lambda p: p[3], plays)
+    dates = map(lambda p: p[0], plays)
+    return list(zip(dates, artists))
+    
 
 def trailing_sum(y, trail):
     if trail > 1:
