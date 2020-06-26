@@ -25,18 +25,18 @@ def parse_json(play):
 def load_plays(filename, mn = 30000):
     file_type = filename.split('.')[-1]
     if file_type == 'json':
-        with open(filename, encoding="utf-8") as jf:
-            data = json.load(jf)
+        with open(filename, encoding="utf-8") as json_file:
+            data = json.load(json_file)
             all_plays = map(parse_json, data)
             valid_plays = filter(lambda p: p[0] >= mn, all_plays)
             plays = list(map(lambda p: p[1:], valid_plays))
     elif file_type == 'csv':
-        with open(filename, "r") as csvfile:
-            reader = csv.reader(csvfile, delimiter=',',quotechar='|')
+        with open(filename, encoding="utf-8") as csv_file:
+            reader = csv.reader(csv_file, delimiter=',',quotechar='|')
             plays = list(map(parse_csv, reader))
     else:
         raise ValueError("Unsupported filetype: %s" % file_type)
-    return(plays)
+    return plays
 
 def track_plays(plays):
     tracks = list(map(lambda p: "%s - %s" % (p[1], p[3], plays)))
@@ -121,14 +121,17 @@ def weekly_plays(daily_plays, period = 7, weekday = 3):
 
 def fill_dict(days):
     start = min(days)
-    end = int(max(days))
-    filled_days = [start + i for i in range(end - int(start) + 1)]
+    end = max(days)
+    filled_days = [start + i for i in range(int(end - start) + 1)]
     return dict(zip(filled_days, [0] * len(filled_days)))
 
-def daily(name, play_list):
-    plays = list(filter(lambda p: name in p, play_list))
+def daily_plays(name, play_list):
+    plays = list(filter(lambda p: name == p[1], play_list))
     days = set(map(lambda p: p[0], plays))
     daily_plays = fill_dict(days)
     for p in plays:
         daily_plays[p[0]] += 1
     return daily_plays
+
+def total_plays(name, play_list):
+    return len(list(filter(lambda p: name == p[1], play_list)))
