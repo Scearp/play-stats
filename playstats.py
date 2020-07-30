@@ -44,9 +44,12 @@ def track_plays(plays):
     return list(zip(dates, tracks))
 
 def album_plays(plays):
-    valid_plays = filter(lambda p: p[2] != None, plays)
+    valid_plays = list(filter(lambda p: p[2] != None, plays))
     albums = map(lambda p: "%s - %s" % (p[2], p[3]), valid_plays)
     dates = map(lambda p: p[0], valid_plays)
+    #print(list(albums))
+    #for a in list(zip(dates,albums)):
+    #    print(a)
     return list(zip(dates, albums))
 
 def artist_plays(plays):
@@ -91,7 +94,7 @@ def plot(daily_plays, trail = 1):
     y = xy[1]
 
     plt.plot(x, y)
-    plt.gca().xaxis.set_major_formatter(pdt.DateFormatter('%d/%m/%Y'))
+    plt.gca().xaxis.set_major_formatter(pdt.DateFormatter('%d %b %Y'))
 
 def weekly_plays(daily_plays, period = 7, weekday = 3):
     trail = period - 1
@@ -119,7 +122,7 @@ def weekly_plays(daily_plays, period = 7, weekday = 3):
 
     return weekly_dictionary
 
-def fill_dict(days):
+def fill_daily_dict(days):
     start = min(days)
     end = max(days)
     filled_days = [start + i for i in range(int(end - start) + 1)]
@@ -128,8 +131,15 @@ def fill_dict(days):
 def daily_plays(name, play_list):
     plays = list(filter(lambda p: name == p[1], play_list))
     days = set(map(lambda p: p[0], plays))
-    daily_plays = fill_dict(days)
+    daily_plays = fill_daily_dict(days)
     for p in plays:
+        daily_plays[p[0]] += 1
+    return daily_plays
+
+def total_daily_plays(play_list):
+    days = set(map(lambda p: p[0], play_list))
+    daily_plays = fill_daily_dict(days)
+    for p in play_list:
         daily_plays[p[0]] += 1
     return daily_plays
 
